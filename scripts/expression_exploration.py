@@ -182,10 +182,10 @@ def restructure_transcript_data(transcript, openprot_w_counts):
     rows are files and columns relate to transcript expression
     '''
     transcript_df = openprot_w_counts[openprot_w_counts.transcript == transcript]
-
     data = []
     for column in transcript_df.columns:
         if str(column).endswith('cds_count'):
+            print(column)
             filename = '_'.join(column.split('_')[:-2])
             cds_count = transcript_df[f'{filename}_cds_count'][0]
             orf_count = transcript_df[f'{filename}_orf_count'][0]
@@ -205,23 +205,25 @@ def plot_restructured_df(restructured_df):
     '''
     produce simple plots to explore df 
     '''
-    restructured_df.plot(x ='cds_count', y='orf_count', kind = 'line')
-    plt.show()
+    # restructured_df.plot(x ='cds_count', y='orf_count', kind = 'hist')
+    restructured_df.plot.kde()
+
+    # plt.show()
 
 
 def main(args):
+    if args.s != None or args.t != None:
+        organism_sqlite_cursor = get_sqlite_cursor(args.s)
+        trips_sqlite_cursor = get_sqlite_cursor(args.t)
 
-    organism_sqlite_cursor = get_sqlite_cursor(args.s)
-    trips_sqlite_cursor = get_sqlite_cursor(args.t)
+        transcriptome_list = args.s.split('/')[-1].split('.')[1]
+        readfile_paths = get_readfile_paths_for_organism(trips_sqlite_cursor, transcriptome_list)
 
-    transcriptome_list = args.s.split('/')[-1].split('.')[1]
-    readfile_paths = get_readfile_paths_for_organism(trips_sqlite_cursor, transcriptome_list)
-
-    riboseq_file_paths = {}
-    for study in readfile_paths:
-        for file in readfile_paths[study]['riboseq']:
-            riboseq_file_paths[f"{study}_{file}"] = readfile_paths[study]['riboseq'][file]
-            test_file_path = readfile_paths[study]['riboseq'][file]
+        riboseq_file_paths = {}
+        for study in readfile_paths:
+            for file in readfile_paths[study]['riboseq']:
+                riboseq_file_paths[f"{study}_{file}"] = readfile_paths[study]['riboseq'][file]
+                test_file_path = readfile_paths[study]['riboseq'][file]
 
 
 

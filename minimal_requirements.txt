@@ -1,0 +1,4 @@
+pandas==1.1.5
+sqlitedict==2.0.0
+pickle5==0.0.11
+matplotlib==3.5.2
