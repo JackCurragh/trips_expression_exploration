@@ -52,14 +52,14 @@ def get_readfile_paths_for_organism(trips_sqlite_cursor, transcriptome_list):
     ).fetchall()[0][0]
 
     studies = trips_sqlite_cursor.execute(
-        f"SELECT study_id, study_name FROM studies WHERE organism_id == (SELECT organism_id FROM organisms WHERE transcriptome_list == '{transcriptome_list}') AND owner = 1"
+        f"SELECT study_id, study_name FROM studies WHERE organism_id == (SELECT organism_id FROM organisms WHERE transcriptome_list == '{transcriptome_list}') AND owner = 1 OR owner = 35"
     ).fetchall()
     study_list = [(i[0], i[1]) for i in studies]
 
     for study in study_list:
         if study[1] not in readfile_paths:
-            readfile_paths[study[1]] = {'riboseq':{}, 'rnaseq':{}, 'proteomics':{}}
-
+            readfile_paths[study[1]] = {'riboseq':{}, 'rnaseq':{}}
+        
         files = trips_sqlite_cursor.execute(
             f"SELECT file_type,file_name,study_id,file_id,owner FROM files WHERE study_id == '{study[0]}'"
         ).fetchall()
@@ -71,9 +71,9 @@ def get_readfile_paths_for_organism(trips_sqlite_cursor, transcriptome_list):
             'file_id':file[3],
             'owner':file[4],
             }
-
             path = f"/home/DATA/www/tripsviz/tripsviz/trips_shelves/{information_dict['file_type']}/{organism}/{study[1]}/{information_dict['file_name']}.sqlite"
-            readfile_paths[study[1]][information_dict['file_type']][information_dict['file_name']] = path
+            if information_dict['file_type'] in readfile_paths[study[1]]:
+                readfile_paths[study[1]][information_dict['file_type']][information_dict['file_name']] = path
     return readfile_paths
 
 
@@ -130,49 +130,34 @@ def read_openprot_annotations(path_to_openprot_file):
     read in openprot transcript list and return a df
     '''
     df = pd.read_csv(path_to_openprot_file, sep='\t')
+    df = df.drop_duplicates()
     return df
 
 
-def quantify_studys_expression(openprot, read_file_path, filename):
+def quantify_studys_expression(counts_df, read_file_path, filename):
     '''
     get the read counts for openprot regions for all transcripts in open prot file
     '''
-    counts_df = pd.DataFrame(columns=['transcript', 
-                                        'gene', 
-                                        'length', 
-                                        'cds_start', 
-                                        'cds_stop', 
-                                        'orf_start', 
-                                        'orf_stop', 
-                                        'tx_count_for_gene', 
-                                        f'{filename}_cds_count',
-                                        f'{filename}_orf_count',
-                                        f'{filename}_ratio'])
-
-    for index, row in openprot.iterrows():
+    counts_df.is_copy = False
+    for index, row in counts_df.iterrows():
         ordered_position_counts = get_unambig_reads_for_transcript(read_file_path, row['transcript'])
         if ordered_position_counts == None or row['cds_start'] == 'None' or row['cds_stop'] == 'None':
             continue
 
-        cds_count = get_counts_in_range(ordered_position_counts, int(row['cds_start']), int(row['cds_stop']))
-        orf_count = get_counts_in_range(ordered_position_counts, int(row['orf_start']), int(row['orf_stop']))
-        if orf_count > 0  and cds_count > 0:
-            ratio = cds_count/orf_count
+        counts_df.loc[index, f'{filename}_cds_count'] = get_counts_in_range(ordered_position_counts, int(row['cds_start']), int(row['cds_stop']))
+        counts_df.loc[index, f'{filename}_orf_count'] = get_counts_in_range(ordered_position_counts, int(row['orf_start']), int(row['orf_stop']))
+        counts_df.loc[index, f'{filename}_leader_count'] = get_counts_in_range(ordered_position_counts, int(0), int(row['cds_start']))
+        counts_df.loc[index, f'{filename}_trailer_count'] = get_counts_in_range(ordered_position_counts, int(row['cds_stop']), int(row['length']))
+        counts_df.loc[index, f'{filename}_transcript_count'] = get_counts_in_range(ordered_position_counts, int(0), int(row['length']))
+
+        if counts_df.at[index, f'{filename}_orf_count'] > 0  and counts_df.at[index, f'{filename}_cds_count'] > 0:
+            ratio = counts_df.at[index, f'{filename}_cds_count']/counts_df.at[index, f'{filename}_orf_count']
+        elif counts_df.at[index, f'{filename}_cds_count'] > 0:
+            ratio = 1
         else:
             ratio = 0
-        row = [row['transcript'], 
-                row['gene'], 
-                row['length'], 
-                row['cds_start'], 
-                row['cds_stop'], 
-                row['orf_start'], 
-                row['orf_stop'], 
-                row['tx_count_for_gene'],
-                cds_count,
-                orf_count,
-                ratio]
-        counts_df.loc[len(counts_df)] = row
 
+        counts_df.loc[index, f'{filename}_ratio'] = ratio
     return counts_df
 
 
@@ -185,7 +170,6 @@ def restructure_transcript_data(transcript, openprot_w_counts):
     data = []
     for column in transcript_df.columns:
         if str(column).endswith('cds_count'):
-            print(column)
             filename = '_'.join(column.split('_')[:-2])
             cds_count = transcript_df[f'{filename}_cds_count'][0]
             orf_count = transcript_df[f'{filename}_orf_count'][0]
@@ -203,7 +187,7 @@ def restructure_transcript_data(transcript, openprot_w_counts):
 
 def plot_restructured_df(restructured_df):
     '''
-    produce simple plots to explore df 
+    produce simple plots  to explore df 
     '''
     # restructured_df.plot(x ='cds_count', y='orf_count', kind = 'hist')
     restructured_df.plot.kde()
@@ -225,7 +209,7 @@ def main(args):
                 riboseq_file_paths[f"{study}_{file}"] = readfile_paths[study]['riboseq'][file]
                 test_file_path = readfile_paths[study]['riboseq'][file]
 
-
+    riboseq_file_paths = {i:riboseq_file_paths[i] for i in list(riboseq_file_paths.keys()) }
 
     if os.path.exists(args.o):
         openprot_w_counts = pd.read_csv(args.o)
@@ -233,19 +217,23 @@ def main(args):
     else:
         openprot = read_openprot_annotations(args.openprot)
         single_tx_openprot = openprot[openprot.tx_count_for_gene == 1]
-        openprot_w_counts = single_tx_openprot
+        
+        gene_count_df = single_tx_openprot['gene'].value_counts().to_frame()
+        single_orf_genes_df = gene_count_df[gene_count_df.gene == 1]
+        single_orf_genes_list = list(single_orf_genes_df.index.to_list())
+
+
+        counts_df = single_tx_openprot[single_tx_openprot['gene'].isin(single_orf_genes_list)].copy()
+
         for idx, file in enumerate(riboseq_file_paths):
             print(file, idx, idx/len(riboseq_file_paths))
-            counts_df = quantify_studys_expression(single_tx_openprot, riboseq_file_paths[file], file)
-            print(counts_df)
-            openprot_w_counts = pd.concat([openprot_w_counts, counts_df[[f'{file}_cds_count', f'{file}_orf_count', f'{file}_ratio']]], axis=1)
-        
-        single_tx_openprot.to_csv(args.o)
+            counts_df = quantify_studys_expression(counts_df, riboseq_file_paths[file], file)
+            counts_df.to_csv(args.o)
 
-    for transcript in openprot_w_counts.transcript:
-        restructured_df = restructure_transcript_data(transcript, openprot_w_counts)
-        plot_restructured_df(restructured_df)
-        break
+    # for transcript in openprot_w_counts.transcript:
+    #     restructured_df = restructure_transcript_data(transcript, openprot_w_counts)
+    #     plot_restructured_df(restructured_df)
+    #     break
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
