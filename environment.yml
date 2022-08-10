@@ -1,0 +1,4 @@
+name: trips_expression_exploration
+channels:
+  - defaults
+prefix: /home/gwips/miniconda3/envs/trips_expression_exploration
