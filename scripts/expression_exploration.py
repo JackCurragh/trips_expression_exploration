@@ -150,7 +150,6 @@ def quantify_studys_expression(counts_df, read_file_path, filename):
         counts_df.loc[index, f'{filename}_trailer_count'] = get_counts_in_range(ordered_position_counts, int(row['cds_stop']), int(row['length']))
         counts_df.loc[index, f'{filename}_transcript_count'] = get_counts_in_range(ordered_position_counts, int(0), int(row['length']))
 
-        print(counts_df.loc[index, f'{filename}_leader_count'], counts_df.loc[index, f'{filename}_trailer_count'])
         if counts_df.at[index, f'{filename}_orf_count'] > 0  and counts_df.at[index, f'{filename}_cds_count'] > 0:
             ratio = counts_df.at[index, f'{filename}_cds_count']/counts_df.at[index, f'{filename}_orf_count']
         elif counts_df.at[index, f'{filename}_cds_count'] > 0:
@@ -243,8 +242,18 @@ def main(args):
             counts_df.to_csv(args.o)
 
     count = 0
+    global_restructured_df = None
     for transcript in openprot_w_counts.transcript:
+
         restructured_df = restructure_transcript_data(transcript, openprot_w_counts)
+        if not global_restructured_df:
+            global_restructured_df = restructured_df.assign(filename = f"{transcript}_" + restructured_df.filename)
+        else:
+            new_restructured_df = restructured_df.assign(filename = f"{transcript}_" + restructured_df.filename)
+            global_restructured_df = pd.concat([global_restructured_df, new_restructured_df])
+            print(global_restructured_df)
+
+            
         transcript_df = openprot_w_counts[openprot_w_counts.transcript == transcript][["transcript", "gene", "cds_start","cds_stop","orf_start","orf_stop"]]
         print(f"{transcript_df}\n", restructured_df.describe(), '\n', '-'*100 ,"\n\n")
         # plt.show()
