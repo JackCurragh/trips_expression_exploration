@@ -150,6 +150,7 @@ def quantify_studys_expression(counts_df, read_file_path, filename):
         counts_df.loc[index, f'{filename}_trailer_count'] = get_counts_in_range(ordered_position_counts, int(row['cds_stop']), int(row['length']))
         counts_df.loc[index, f'{filename}_transcript_count'] = get_counts_in_range(ordered_position_counts, int(0), int(row['length']))
 
+        print(counts_df.loc[index, f'{filename}_leader_count'], counts_df.loc[index, f'{filename}_trailer_count'])
         if counts_df.at[index, f'{filename}_orf_count'] > 0  and counts_df.at[index, f'{filename}_cds_count'] > 0:
             ratio = counts_df.at[index, f'{filename}_cds_count']/counts_df.at[index, f'{filename}_orf_count']
         elif counts_df.at[index, f'{filename}_cds_count'] > 0:
@@ -171,17 +172,28 @@ def restructure_transcript_data(transcript, openprot_w_counts):
     for column in transcript_df.columns:
         if str(column).endswith('cds_count'):
             filename = '_'.join(column.split('_')[:-2])
-            cds_count = transcript_df[f'{filename}_cds_count'][0]
-            orf_count = transcript_df[f'{filename}_orf_count'][0]
-            ratio = transcript_df[f'{filename}_ratio'][0]
-            data.append([filename, cds_count, orf_count, ratio])
+
+            idx = transcript_df[f'{filename}_cds_count'].index[0]
+
+            cds_count = transcript_df[f'{filename}_cds_count'][idx]
+            orf_count = transcript_df[f'{filename}_orf_count'][idx]
+            ratio = transcript_df[f'{filename}_ratio'][idx]
+            leader_count = transcript_df[f'{filename}_leader_count'][idx]
+            trailer_count = transcript_df[f'{filename}_trailer_count'][idx]
+            transcript_count = transcript_df[f'{filename}_transcript_count'][idx]
+
+            data.append([filename, cds_count, orf_count, ratio, leader_count, trailer_count, transcript_count])
 
     restructured_df = pd.DataFrame(data, columns=[
                                 'file',
                                 'cds_count',
                                 'orf_count',
-                                'ratio'
+                                'ratio',
+                                'leader_count',
+                                'trailer_count',
+                                'transcript_count',
                                 ])
+    print(restructured_df.sort_values(by='orf_count'))
     return restructured_df
 
 
@@ -190,9 +202,9 @@ def plot_restructured_df(restructured_df):
     produce simple plots  to explore df 
     '''
     # restructured_df.plot(x ='cds_count', y='orf_count', kind = 'hist')
-    restructured_df.plot.kde()
+    restructured_df.plot.hist()
 
-    # plt.show()
+    plt.show()
 
 
 def main(args):
@@ -209,7 +221,7 @@ def main(args):
                 riboseq_file_paths[f"{study}_{file}"] = readfile_paths[study]['riboseq'][file]
                 test_file_path = readfile_paths[study]['riboseq'][file]
 
-    riboseq_file_paths = {i:riboseq_file_paths[i] for i in list(riboseq_file_paths.keys()) }
+        riboseq_file_paths = {i:riboseq_file_paths[i] for i in list(riboseq_file_paths.keys()) }
 
     if os.path.exists(args.o):
         openprot_w_counts = pd.read_csv(args.o)
@@ -230,10 +242,16 @@ def main(args):
             counts_df = quantify_studys_expression(counts_df, riboseq_file_paths[file], file)
             counts_df.to_csv(args.o)
 
+    count = 0
     for transcript in openprot_w_counts.transcript:
         restructured_df = restructure_transcript_data(transcript, openprot_w_counts)
-        plot_restructured_df(restructured_df)
-        break
+        transcript_df = openprot_w_counts[openprot_w_counts.transcript == transcript][["transcript", "gene", "cds_start","cds_stop","orf_start","orf_stop"]]
+        print(f"{transcript_df}\n", restructured_df.describe(), '\n', '-'*100 ,"\n\n")
+        # plt.show()
+        # plot_restructured_df(restructured_df)
+        count +=1
+        if count > 10:
+            break
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
