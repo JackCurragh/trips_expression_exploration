@@ -230,10 +230,10 @@ def main(args):
             counts_df = quantify_studys_expression(counts_df, riboseq_file_paths[file], file)
             counts_df.to_csv(args.o)
 
-    # for transcript in openprot_w_counts.transcript:
-    #     restructured_df = restructure_transcript_data(transcript, openprot_w_counts)
-    #     plot_restructured_df(restructured_df)
-    #     break
+    for transcript in openprot_w_counts.transcript:
+        restructured_df = restructure_transcript_data(transcript, openprot_w_counts)
+        plot_restructured_df(restructured_df)
+        break
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
