@@ -69,7 +69,7 @@ def main(path_to_tsv, path_to_sqlite, outfile, localization):
         for index, row in transcript_df.iterrows():
             if index % 100 == 0:
                 print(index, round(index/num_rows, 2))
-            if row['localization'] == localization:
+            if row['localization'] == localization or localization == None:
                 transcipt_name, transcript_version = str(row['transcript accession']).split('.')[0], str(row['transcript accession']).split('.')[1]
                 information_dict = get_transcript_annotation(sqlite_cursor, transcipt_name)
                 information_dict['orf_start'] = int(row['start transcript coordinates'])
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument("-o", help="output path for the report")
 
     args = parser.parse_args()
-    main(args.t, args.s, args.o, "5'UTR")
+    main(args.t, args.s, args.o, None)
 
 
     '''
