@@ -5,11 +5,13 @@ from sqlitedict import SqliteDict
 import pickle5
 import collections
 import pandas as pd
+import os 
 
 def get_sqlite_cursor(db_path):
     '''
     open a connection to the organism sqlite db and cursor
     '''
+    print(f'Opening database file at {db_path}')
     connection = sqlite3.connect(f"{db_path}")
     cursor = connection.cursor()
     return cursor
@@ -76,8 +78,12 @@ def read_sqlite_dict(filepath):
     '''
     read in sqlite dict from filepath
     '''
-    sqlite_db = SqliteDict(f"{filepath}", autocommit=False, decode=my_decoder)
-    return sqlite_db
+    if os.path.exists(filepath):
+        sqlite_db = SqliteDict(f"{filepath}", autocommit=False, decode=my_decoder)
+        return sqlite_db
+    
+    else:
+        return None 
 
 
 def get_unambig_reads_for_transcript(file_path, transcipt_name):
@@ -86,6 +92,9 @@ def get_unambig_reads_for_transcript(file_path, transcipt_name):
     '''
     position_counts = {}
     sqlite_dict = read_sqlite_dict(file_path)
+    if sqlite_dict == None:
+        return None
+
     if transcipt_name in sqlite_dict:
         read_dict = sqlite_dict[transcipt_name]['unambig']
     else:
@@ -101,6 +110,7 @@ def get_unambig_reads_for_transcript(file_path, transcipt_name):
 
     ordered_position_counts = collections.OrderedDict(sorted(position_counts.items()))
     return ordered_position_counts
+    
     
 
 def get_counts_in_range(ordered_position_counts, start, stop):
@@ -160,3 +170,16 @@ def read_openprot_annotations(path_to_openprot_file):
     df = pd.read_csv(path_to_openprot_file, sep='\t')
     df = df.drop_duplicates()
     return df
+
+
+def get_single_transcript_single_orf(openprot):
+    '''
+    from the openprot input return a dataframe of entries with one transcript and one orf 
+    '''
+    single_tx_openprot = openprot[openprot.tx_count_for_gene == 1]
+    
+    gene_count_df = single_tx_openprot['gene'].value_counts().to_frame()
+    single_orf_genes_df = gene_count_df[gene_count_df.gene == 1]
+    single_orf_genes_list = list(single_orf_genes_df.index.to_list())
+    single_gene_single_orf = single_tx_openprot[single_tx_openprot['gene'].isin(single_orf_genes_list)].copy()
+    return single_gene_single_orf

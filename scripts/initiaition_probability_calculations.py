@@ -4,6 +4,93 @@ import os
 import argparse
 from core import *
 
+def get_single_transcript_single_orf(openprot):
+    '''
+    from the openprot input return a dataframe of entries with one transcript and one orf 
+    '''
+    single_tx_openprot = openprot[openprot.tx_count_for_gene == 1]
+    
+    gene_count_df = single_tx_openprot['gene'].value_counts().to_frame()
+    single_orf_genes_df = gene_count_df[gene_count_df.gene == 1]
+    single_orf_genes_list = list(single_orf_genes_df.index.to_list())
+    single_gene_single_orf = single_tx_openprot[single_tx_openprot['gene'].isin(single_orf_genes_list)].copy()
+    return single_gene_single_orf
+
+
+def calculate_studies_probabilities(read_file_paths, row, study_name=None):
+    '''
+    calculate uORF intiiation probabilities for a given study
+    '''
+    counter = 0
+    probs = []
+    for index, file in enumerate(read_file_paths):
+        if study_name == None:
+            pass
+        elif study_name in file:
+            pass
+        else:
+            continue
+        read_file_path = read_file_paths[file]
+        ordered_position_counts = get_unambig_reads_for_transcript(read_file_path, row['transcript'])
+
+        if 'None' in list(row) or ordered_position_counts == None:
+            print(list(row))
+            continue
+
+        cds_count = get_counts_in_range(ordered_position_counts, int(row['cds_start']), int(row['cds_stop']))
+        cds_length = int(row['cds_stop']) - int(row['cds_start'])
+        cds_rpb = cds_count/cds_length
+
+        rest_of_tx_count_cds = get_counts_in_range(ordered_position_counts, int(row['cds_start']), int(row['length']))
+        rest_of_tx_count_cds_length = int(row['length']) - int(row['cds_start'])
+        rest_of_tx_rpb_cds = rest_of_tx_count_cds/rest_of_tx_count_cds_length
+
+        orf_count = get_counts_in_range(ordered_position_counts, int(row['orf_start']), int(row['orf_stop']))
+        orf_length = int(row['orf_stop']) - int(row['orf_start'])
+        orf_rpb = orf_count/orf_length
+
+        rest_of_tx_count_orf = get_counts_in_range(ordered_position_counts, int(row['orf_start']), int(row['length']))
+        rest_of_tx_count_orf_length = int(row['length']) - int(row['orf_start'])
+        rest_of_tx_rpb_orf = rest_of_tx_count_orf/rest_of_tx_count_orf_length
+
+
+
+        if cds_count > 5 and orf_count > 5:
+            ratio = round(cds_rpb/orf_rpb, 2)
+            prob_orf_init = round(orf_rpb/rest_of_tx_rpb_orf, 2)
+            prob_cds_init = round(cds_rpb/rest_of_tx_rpb_cds, 2)
+            prob_orf_init_raw = round(orf_count/rest_of_tx_count_orf, 2)
+            prob_cds_init_raw = round(cds_count/rest_of_tx_count_cds, 2)
+            init_ratio = round(prob_cds_init/prob_orf_init, 2)
+            probs.append([row['transcript'], file,
+                                    orf_count, 
+                                    cds_count, 
+                                    round(ratio, 2), 
+                                    prob_orf_init, 
+                                    prob_cds_init, 
+                                    prob_orf_init_raw, 
+                                    prob_cds_init_raw, 
+                                    init_ratio, 
+                                    round(init_ratio - ratio,2)])
+        else:
+            print(row['transcript'], cds_count, orf_count)
+            counter += 1
+    
+    
+    return pd.DataFrame(probs, columns=[
+                            'transcript',
+                            'file',
+                            'orf_count',
+                            'cds_count',
+                            'ratio',
+                            'prob_uORF_init_rpb',
+                            'prob_cds_init_rpb',
+                            'prob_uORF_init_raw',
+                            'prob_cds_init_raw',
+                            'initiation_ratio',
+                            'ratio_diff_init_minus_full'
+                                ])
+            
 
 
 def main(args):
@@ -23,13 +110,23 @@ def main(args):
     riboseq_file_path = {i:riboseq_file_paths[i] for i in list(riboseq_file_paths.keys()) }
 
     openprot = read_openprot_annotations(args.openprot)
-    single_tx_openprot = openprot[openprot.tx_count_for_gene == 1]
-    
-    gene_count_df = single_tx_openprot['gene'].value_counts().to_frame()
-    single_orf_genes_df = gene_count_df[gene_count_df.gene == 1]
-    single_orf_genes_list = list(single_orf_genes_df.index.to_list())
-    single_gene_single_orf = single_tx_openprot[single_tx_openprot['gene'].isin(single_orf_genes_list)].copy()
-    print(single_gene_single_orf)
+    single_transcript_single_orf = get_single_transcript_single_orf(openprot)
+
+    probs_df = None
+    counter = 0 
+    for row in single_transcript_single_orf.iterrows():
+        print()
+
+        if type(probs_df) == None:
+            probs_df = calculate_studies_probabilities(riboseq_file_paths, row[1])  
+            print(row[1]['transcript'])
+      
+        else:
+            new_probs_df = calculate_studies_probabilities(riboseq_file_paths, row[1])
+            probs_df = pd.concat([probs_df, new_probs_df])
+            print(row[1]['transcript'], probs_df.shape)
+        
+    probs_df.to_csv("probabilites_single_tx_single_orf.csv")
     return True 
 
 if __name__ == '__main__':
