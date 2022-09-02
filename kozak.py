@@ -1,8 +1,9 @@
-import sqlite3 
+import numpy as np
 import argparse
 from core import *
 from weblogo import *
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def get_transcript_sequence(transcript, organism_sqlite_cursor):
@@ -22,18 +23,46 @@ def main(args):
     openprot = read_openprot_annotations(args.transcripts)
 
     probs_df = pd.read_csv(args.p)
+    probs_df.reset_index(drop=True, inplace=True)
+
+    tx_grouped = probs_df.groupby(by="transcript") 
+    tx_grouped = tx_grouped.mean()
+
     init = []
-    for row in probs_df.iterrows():
-        init.append([f'{row[1]["transcript"]}_orf', row[1]["prob_uORF_init_rpb"], row[1]["prob_uORF_init_raw"]])
-        init.append([f'{row[1]["transcript"]}_cds', row[1]["prob_cds_init_rpb"], row[1]["prob_cds_init_raw"]])
+    for row in tx_grouped.iterrows():
+
+        openprot_subset = openprot[openprot.transcript == row[0]]
+        idx = openprot_subset.index[0]
+        orf_start = openprot_subset['orf_start'][idx]
+        orf_stop = openprot_subset['orf_stop'][idx]
+
+        cds_start = openprot_subset['cds_start'][idx]
+        cds_stop = openprot_subset['cds_stop'][idx]
+
+        init.append([f'{row[0]}_orf', orf_start, orf_stop, row[1]["prob_uORF_init_raw"]])
+        init.append([f'{row[0]}_cds', cds_start, cds_stop, row[1]["prob_cds_init_raw"]])
 
     init_df = pd.DataFrame(init, columns=[
                                 'transcript',
-                                'rpb_prob',
+                                'start',
+                                'stop',
                                 'raw_prob',
     ])
-    print(init_df.sort_values('raw_prob'))
+    bins = np.linspace(init_df.raw_prob.min(), init_df.raw_prob.max(), 10)
+    groups = init_df.groupby(np.digitize(init_df.raw_prob, bins))
+
+    print(init_df.shape)
+    split_dfs = np.array_split(init_df, 10)
+
+    for df in split_dfs:
+        print(df.shape)
+    # for group in groups:
+    #     print(group[1])
+    # print(groups.mean())
+    # print(groups.median())
+
     unique_transcripts = list(probs_df['transcript'].unique())
+    return True
 
     outfile = open(args.o, 'w')
     for row in openprot.iterrows():
@@ -45,10 +74,8 @@ def main(args):
         sequence = get_transcript_sequence(row[1]['transcript'], cursor)
         outfile.write(f">{row[1]['transcript']}_orf\n")
         outfile.write(f"{sequence[orf_start-10:orf_start+10]}\n")
-        print(sequence[orf_start-1:orf_start+2])
         outfile.write(f">{row[1]['transcript']}_cds\n")
         outfile.write(f"{sequence[cds_start-10:cds_start+10]}\n")
-
     outfile.close
     return True 
 
