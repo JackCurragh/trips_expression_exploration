@@ -4,17 +4,7 @@ import os
 import argparse
 from core import *
 
-def get_single_transcript_single_orf(openprot):
-    '''
-    from the openprot input return a dataframe of entries with one transcript and one orf 
-    '''
-    single_tx_openprot = openprot[openprot.tx_count_for_gene == 1]
-    
-    gene_count_df = single_tx_openprot['gene'].value_counts().to_frame()
-    single_orf_genes_df = gene_count_df[gene_count_df.gene == 1]
-    single_orf_genes_list = list(single_orf_genes_df.index.to_list())
-    single_gene_single_orf = single_tx_openprot[single_tx_openprot['gene'].isin(single_orf_genes_list)].copy()
-    return single_gene_single_orf
+
 
 
 def calculate_studies_probabilities(read_file_paths, row, study_name=None):
@@ -112,6 +102,10 @@ def main(args):
     openprot = read_openprot_annotations(args.openprot)
     single_transcript_single_orf = get_single_transcript_single_orf(openprot)
 
+    print(single_transcript_single_orf.shape)
+
+    print(len(riboseq_file_path))
+    return False
     probs_df = None
     counter = 0 
     for row in single_transcript_single_orf.iterrows():
@@ -126,7 +120,7 @@ def main(args):
             probs_df = pd.concat([probs_df, new_probs_df])
             print(row[1]['transcript'], probs_df.shape)
         
-    probs_df.to_csv("probabilites_single_tx_single_orf.csv")
+        probs_df.to_csv("probabilites_single_tx_single_orf.csv")
     return True 
 
 if __name__ == '__main__':
@@ -138,3 +132,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main(args)
+
+# res = cursor.execute(f'SELECT gene from transcripts WHERE transcript = {i}').fetchall()
+
+# python scripts/initiaition_probability_calculations.py --openprot data/full_fiveprime_candidates.tsv -s /home/DATA/www/tripsviz/tripsviz/trips_annotations/homo_sapiens/homo_sapiens.Gencode_v25.sqlite -t /home/DATA/www/tripsviz/tripsviz/trips.sqlite

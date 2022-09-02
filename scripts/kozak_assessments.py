@@ -34,7 +34,6 @@ def main(args):
     ])
     print(init_df.sort_values('raw_prob'))
     unique_transcripts = list(probs_df['transcript'].unique())
-    return True
 
     outfile = open(args.o, 'w')
     for row in openprot.iterrows():
@@ -46,8 +45,10 @@ def main(args):
         sequence = get_transcript_sequence(row[1]['transcript'], cursor)
         outfile.write(f">{row[1]['transcript']}_orf\n")
         outfile.write(f"{sequence[orf_start-10:orf_start+10]}\n")
+        print(sequence[orf_start-1:orf_start+2])
         outfile.write(f">{row[1]['transcript']}_cds\n")
         outfile.write(f"{sequence[cds_start-10:cds_start+10]}\n")
+
     outfile.close
     return True 
 
