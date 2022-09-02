@@ -183,3 +183,16 @@ def get_single_transcript_single_orf(openprot):
     single_orf_genes_list = list(single_orf_genes_df.index.to_list())
     single_gene_single_orf = single_tx_openprot[single_tx_openprot['gene'].isin(single_orf_genes_list)].copy()
     return single_gene_single_orf
+
+
+def get_single_transcript_N_orf(openprot, N):
+    '''
+    from the openprot input return a dataframe of entries with one transcript and one orf 
+    '''
+    single_tx_openprot = openprot[openprot.tx_count_for_gene == 1]
+    
+    gene_count_df = single_tx_openprot['gene'].value_counts().to_frame()
+    single_orf_genes_df = gene_count_df[gene_count_df.gene <= N]
+    single_orf_genes_list = list(single_orf_genes_df.index.to_list())
+    single_gene_single_orf = single_tx_openprot[single_tx_openprot['gene'].isin(single_orf_genes_list)].copy()
+    return single_gene_single_orf
