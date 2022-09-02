@@ -1,3 +1,4 @@
+,transcript,file,orf_count,cds_count,ratio,prob_uORF_init_rpb,prob_cds_init_rpb,prob_uORF_init_raw,prob_cds_init_raw,initiation_ratio,ratio_diff_init_minus_full
 0,ENST00000372134,Gawron16_SRR2732970,10430,22715,0.45,3.28,1.85,0.34,0.99,0.56,0.11
 1,ENST00000372134,Andreev_new_ef_F1_control_ribo,520,10400,4.11,0.48,1.86,0.05,1.0,3.88,-0.23
 2,ENST00000372134,Andreev_new_ef_F2_phendc3_ribo,481,9167,3.91,0.5,1.86,0.05,1.0,3.72,-0.19

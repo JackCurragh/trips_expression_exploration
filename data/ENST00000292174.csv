@@ -1,3 +1,4 @@
+,transcript,file,orf_count,cds_count,ratio,prob_uORF_init_rpb,prob_cds_init_rpb,prob_uORF_init_raw,prob_cds_init_raw,initiation_ratio,ratio_diff_init_minus_full
 0,ENST00000292174,Battle15_SRR1585524,19,75,0.47,6.76,3.81,0.2,1.0,0.56,0.09
 1,ENST00000292174,Battle15_SRR1585492,7,29,0.49,6.51,3.81,0.19,1.0,0.59,0.1
 2,ENST00000292174,Battle15_SRR1585518,7,46,0.78,4.18,3.81,0.12,1.0,0.91,0.13
