@@ -1,0 +1,8 @@
+,transcript,file,orf_count,cds_count,ratio,prob_uORF_init_rpb,prob_cds_init_rpb,prob_uORF_init_raw,prob_cds_init_raw,initiation_ratio,ratio_diff_init_minus_full, condition
+10,ENST00000254998,Lintner17_SRR5227304,46,241,5.14,0.45,1.73,0.17,1.0,3.84,-1.3,Control
+111,ENST00000254998,Lintner17_SRR5227305,34,192,5.54,0.42,1.72,0.16,0.99,4.1,-1.44,Control
+112,ENST00000254998,Lintner17_SRR5227306,65,262,3.95,0.54,1.73,0.21,0.99,3.2,-0.75,Control
+129,ENST00000254998,Lintner17_SRR5227289,52,199,3.75,0.59,1.73,0.22,0.99,2.93,-0.82,Drug 10min 1.5
+125,ENST00000254998,Lintner17_SRR5227290,44,221,4.93,0.49,1.73,0.18,1.0,3.53,-1.4,Drug 10min 1.5
+139,ENST00000254998,Park16_SRR3306589,768,400,0.51,1.93,1.64,0.73,0.94,0.85,0.34,HeLa Async
+140,ENST00000254998,Park16_SRR3306588,327,252,0.76,1.67,1.74,0.63,1.0,1.04,0.28,HeLa Async

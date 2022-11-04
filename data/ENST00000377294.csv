@@ -1,3 +1,4 @@
+,transcript,file,orf_count,cds_count,ratio,prob_uORF_init_rpb,prob_cds_init_rpb,prob_uORF_init_raw,prob_cds_init_raw,initiation_ratio,ratio_diff_init_minus_full
 0,ENST00000377294,Park16_SRR3306586,13,92,0.39,2.22,1.25,0.09,0.96,0.56,0.17
 1,ENST00000377294,Park16_SRR3306587,46,97,0.12,6.79,1.3,0.27,1.0,0.19,0.07
 2,ENST00000377294,Park16_SRR3306589,31,117,0.21,3.85,1.3,0.15,1.0,0.34,0.13
