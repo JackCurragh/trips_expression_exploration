@@ -105,7 +105,6 @@ def main(args):
     print(single_transcript_single_orf.shape)
 
     print(len(riboseq_file_path))
-    return False
     probs_df = None
     counter = 0 
     for row in single_transcript_single_orf.iterrows():
@@ -120,7 +119,7 @@ def main(args):
             probs_df = pd.concat([probs_df, new_probs_df])
             print(row[1]['transcript'], probs_df.shape)
         
-        probs_df.to_csv("probabilites_single_tx_single_orf.csv")
+        probs_df.to_csv("probabilites_nras_single_orf.csv")
     return True 
 
 if __name__ == '__main__':

@@ -153,8 +153,9 @@ if __name__ == '__main__':
 
 
 '''
-python expression_exploration.py -l transcript_list.txt 
--s /home/DATA/www/tripsviz/tripsviz/trips_annotations/homo_sapiens/homo_sapiens.Gencode_v25.sqlite 
--t /home/DATA/www/tripsviz/tripsviz/trips.sqlite 
+python expression_exploration.py -l transcript_list.txt \
+-s /home/DATA/www/tripsviz/tripsviz/trips_annotations/homo_sapiens/homo_sapiens.Gencode_v25.sqlite \
+-t /home/DATA/www/tripsviz/tripsviz/trips.sqlite \
+--openprot data/new_openprot_w_counts.csv \
 -o example_output.txt
 '''
